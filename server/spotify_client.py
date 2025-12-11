@@ -217,6 +217,160 @@ class SpotifyClient:
         except Exception:
             return []
 
+    def get_mixed_seeds(self, max_seeds=5):
+        """
+        Creates a diverse mix of seeds from multiple sources:
+        1. Top tracks (from listening history) - most reliable
+        2. Top artists 
+        3. Liked tracks (fallback)
+        Returns dict with seed_tracks and seed_artists lists.
+        """
+        seed_tracks = []
+        seed_artists = []
+        
+        # Priority 1: Top tracks (these represent actual listening behavior)
+        try:
+            top_tracks = self.sp.current_user_top_tracks(limit=20, time_range='medium_term')
+            seed_tracks.extend([t['id'] for t in top_tracks['items'][:10]])
+        except Exception as e:
+            print(f"Failed to get top tracks: {e}")
+        
+        # Priority 2: Top artists
+        try:
+            top_artists = self.sp.current_user_top_artists(limit=10, time_range='medium_term')
+            seed_artists.extend([a['id'] for a in top_artists['items'][:5]])
+        except Exception as e:
+            print(f"Failed to get top artists: {e}")
+        
+        # Priority 3: Liked tracks (if we still need more seeds)
+        if len(seed_tracks) < 5:
+            try:
+                liked = self.sp.current_user_saved_tracks(limit=20)
+                liked_ids = [item['track']['id'] for item in liked['items'] if item['track']]
+                # Add liked tracks that aren't already in seed_tracks
+                for tid in liked_ids:
+                    if tid not in seed_tracks:
+                        seed_tracks.append(tid)
+                        if len(seed_tracks) >= 10:
+                            break
+            except Exception as e:
+                print(f"Failed to get liked tracks: {e}")
+        
+        # Spotify API allows max 5 seeds total (tracks + artists + genres combined)
+        # Prioritize tracks, then fill with artists
+        final_tracks = seed_tracks[:4]  # Leave room for at least 1 artist
+        remaining_slots = max_seeds - len(final_tracks)
+        final_artists = seed_artists[:remaining_slots] if remaining_slots > 0 else []
+        
+        return {
+            'seed_tracks': final_tracks if final_tracks else None,
+            'seed_artists': final_artists if final_artists else None,
+            'total_sources': len(seed_tracks) + len(seed_artists)
+        }
+
+    def get_audio_profile(self):
+        """
+        Analyzes user's top tracks to create an audio profile.
+        Returns average values for energy, danceability, valence, etc.
+        """
+        try:
+            # Get top tracks
+            top_tracks = self.sp.current_user_top_tracks(limit=50, time_range='medium_term')
+            track_ids = [t['id'] for t in top_tracks['items']]
+            
+            if not track_ids:
+                return None
+            
+            # Get audio features for these tracks
+            features = self.sp.audio_features(track_ids)
+            
+            # Calculate averages
+            valid_features = [f for f in features if f is not None]
+            if not valid_features:
+                return None
+            
+            avg_energy = sum(f['energy'] for f in valid_features) / len(valid_features)
+            avg_danceability = sum(f['danceability'] for f in valid_features) / len(valid_features)
+            avg_valence = sum(f['valence'] for f in valid_features) / len(valid_features)
+            avg_acousticness = sum(f['acousticness'] for f in valid_features) / len(valid_features)
+            avg_instrumentalness = sum(f['instrumentalness'] for f in valid_features) / len(valid_features)
+            avg_tempo = sum(f['tempo'] for f in valid_features) / len(valid_features)
+            
+            return {
+                'energy': round(avg_energy * 100),
+                'danceability': round(avg_danceability * 100),
+                'valence': round(avg_valence * 100),  # Happiness
+                'acousticness': round(avg_acousticness * 100),
+                'instrumentalness': round(avg_instrumentalness * 100),
+                'tempo': round(avg_tempo),
+                'tracks_analyzed': len(valid_features)
+            }
+        except Exception as e:
+            print(f"Failed to get audio profile: {e}")
+            return None
+
+    def get_listening_stats(self):
+        """
+        Returns comprehensive listening statistics.
+        """
+        stats = {
+            'total_top_tracks': 0,
+            'total_top_artists': 0,
+            'total_genres': 0,
+            'total_liked_tracks': 0,
+            'top_track': None,
+            'top_artist': None,
+            'unique_genres': []
+        }
+        
+        try:
+            # Top tracks count
+            top_tracks = self.sp.current_user_top_tracks(limit=50, time_range='long_term')
+            stats['total_top_tracks'] = len(top_tracks['items'])
+            if top_tracks['items']:
+                t = top_tracks['items'][0]
+                stats['top_track'] = {
+                    'name': t['name'],
+                    'artist': t['artists'][0]['name'] if t['artists'] else 'Unknown',
+                    'image_url': t['album']['images'][0]['url'] if t['album']['images'] else None,
+                    'external_url': t['external_urls']['spotify']
+                }
+        except Exception as e:
+            print(f"Failed to get top tracks stats: {e}")
+        
+        try:
+            # Top artists count and genres
+            top_artists = self.sp.current_user_top_artists(limit=50, time_range='long_term')
+            stats['total_top_artists'] = len(top_artists['items'])
+            
+            # Collect all genres
+            all_genres = set()
+            for artist in top_artists['items']:
+                all_genres.update(artist['genres'])
+            
+            stats['unique_genres'] = list(all_genres)[:20]  # Top 20 genres
+            stats['total_genres'] = len(all_genres)
+            
+            if top_artists['items']:
+                a = top_artists['items'][0]
+                stats['top_artist'] = {
+                    'name': a['name'],
+                    'image_url': a['images'][0]['url'] if a['images'] else None,
+                    'external_url': a['external_urls']['spotify'],
+                    'genres': a['genres'][:3]  # Top 3 genres for this artist
+                }
+        except Exception as e:
+            print(f"Failed to get top artists stats: {e}")
+        
+        try:
+            # Liked tracks count (approximate)
+            liked = self.sp.current_user_saved_tracks(limit=1)
+            stats['total_liked_tracks'] = liked.get('total', 0)
+        except Exception:
+            pass
+        
+        return stats
+
     def _format_track(self, track):
         return {
             'id': track['id'],
@@ -227,3 +381,4 @@ class SpotifyClient:
             'image_url': track['album']['images'][0]['url'] if track['album']['images'] else None,
             'uri': track['uri']
         }
+

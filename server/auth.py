@@ -2,9 +2,10 @@ import os
 import spotipy
 from spotipy.oauth2 import SpotifyOAuth
 from dotenv import load_dotenv
-import streamlit as st
 
-load_dotenv()
+# Load .env from project root (parent of server/)
+env_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), '.env')
+load_dotenv(env_path)
 
 class SpotifyAuthenticator:
     """
