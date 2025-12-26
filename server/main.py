@@ -82,14 +82,14 @@ def callback(code: str, auth: SpotifyAuthenticator = Depends(get_authenticator))
         # Redirect to Frontend Dashboard (matching domain)
         response = RedirectResponse(url=f"https://sonic-discovery-update-pi.vercel.app/dashboard?token={access_token}")
         
-        # Set HttpOnly cookie - RELAXED FOR LOCALHOST DEBUGGING
+        # Set HttpOnly cookie for production (HTTPS with cross-domain support)
         response.set_cookie(
             key="spotify_token", 
             value=access_token, 
             httponly=True, 
-            samesite="none", # Strict might block redirect-based cookies
-            secure=true,   
-            path="/"        # Ensure available everywhere
+            samesite="none",  # Required for cross-domain cookies (Vercel frontend + Render backend)
+            secure=True,      # Required for HTTPS in production
+            path="/"
         )
         return response
     except Exception as e:
