@@ -4,7 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Play, Sparkles, TrendingUp, Music2, Disc3, Heart, X } from 'lucide-react';
 import { Sidebar } from '../components/Sidebar';
 
-const API_URL = 'http://127.0.0.1:8501';
+const API_URL = 'https://sonicdiscoveryupdate.onrender.com';
 
 interface Artist {
     name: string;

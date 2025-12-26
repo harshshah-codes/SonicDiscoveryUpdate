@@ -5,7 +5,7 @@ import { Users, Shuffle, Sparkles } from 'lucide-react';
 import { Sidebar } from '../components/Sidebar';
 import { TrackGrid } from '../components/TrackGrid';
 
-const API_URL = 'http://127.0.0.1:8501';
+const API_URL = 'https://sonicdiscoveryupdate.onrender.com';
 
 interface Track {
     id: string;

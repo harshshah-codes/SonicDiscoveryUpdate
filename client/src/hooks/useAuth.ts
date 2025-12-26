@@ -8,7 +8,7 @@ interface User {
     id: string;
 }
 
-const API_URL = 'http://127.0.0.1:8501';
+const API_URL = 'https://sonicdiscoveryupdate.onrender.com';
 
 export function useAuth() {
     const [user, setUser] = useState<User | null>(null);

@@ -2,7 +2,7 @@ import { useEffect, useRef } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import axios from 'axios';
 
-const API_URL = 'http://127.0.0.1:8501';
+const API_URL = 'https://sonicdiscoveryupdate.onrender.com';
 
 export function Callback() {
     const [searchParams] = useSearchParams();
