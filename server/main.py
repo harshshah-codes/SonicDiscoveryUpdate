@@ -18,10 +18,9 @@ import spotipy
 app = FastAPI(title="SonicDiscovery API")
 
 origins = [
-    "http://localhost:5173",
+    "https://sonic-discovery-update-pi.vercel.app",  # Your actual Vercel URL
+    "http://localhost:5173",  # Keep for local development
     "http://localhost:3000",
-    "http://127.0.0.1:5173",
-    "http://127.0.0.1:3000",
 ]
 
 app.add_middleware(
