@@ -80,7 +80,7 @@ def callback(code: str, auth: SpotifyAuthenticator = Depends(get_authenticator))
         access_token = token_info['access_token']
         
         # Redirect to Frontend Dashboard (matching domain)
-        response = RedirectResponse(url=f"http://localhost:5173/dashboard?token={access_token}")
+        response = RedirectResponse(url=f"https://sonic-discovery-update-pi.vercel.app/dashboard?token={access_token}")
         
         # Set HttpOnly cookie - RELAXED FOR LOCALHOST DEBUGGING
         response.set_cookie(
