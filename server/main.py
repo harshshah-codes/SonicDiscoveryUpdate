@@ -87,8 +87,8 @@ def callback(code: str, auth: SpotifyAuthenticator = Depends(get_authenticator))
             key="spotify_token", 
             value=access_token, 
             httponly=True, 
-            samesite="lax", # Strict might block redirect-based cookies
-            secure=true,   # Must be false for http://localhost
+            samesite="none", # Strict might block redirect-based cookies
+            secure=true,   
             path="/"        # Ensure available everywhere
         )
         return response
